@@ -6,7 +6,7 @@ name: Build and publish document Editor
 on:
     push:
         branches:
-            - ntatc-liquidstudio/*
+            - stable
 
 jobs:
     build:
