@@ -28,6 +28,6 @@ jobs:
               with:
                   node-version: 12
                   registry-url: https://registry.npmjs.org/
-            - run: cd packages/ckeditor5-build-decoupled-document && npm publish
+            - run: cd packages/ckeditor5-build-decoupled-document && npm publish --access public
               env:
                   NODE_AUTH_TOKEN: ${{secrets.npm_token}}
