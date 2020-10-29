@@ -15,8 +15,8 @@ jobs:
               with:
                   node-version: 12
             - run: cd packages/ckeditor5-build-decoupled-document
-	    - run: npm install
-	    - run: npm run build
+            - run: npm install
+            - run: npm run build
 
     publish-npm:
         needs: build
