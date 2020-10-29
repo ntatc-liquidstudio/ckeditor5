@@ -16,11 +16,8 @@ jobs:
             - uses: actions/setup-node@v1
               with:
                   node-version: 12
-            - run: pwd
-            - run: cd packages/ckeditor5-build-decoupled-document
-            - run: pwd
-            - run: npm install
-            - run: npm run build
+            - run: cd packages/ckeditor5-build-decoupled-document && npm install
+            - run: cd packages/ckeditor5-build-decoupled-document && npm run build
 
     publish-npm:
         needs: build
@@ -31,7 +28,6 @@ jobs:
               with:
                   node-version: 12
                   registry-url: https://registry.npmjs.org/
-            - run: cd packages/ckeditor5-build-decoupled-document
-            - run: npm publish
+            - run: cd packages/ckeditor5-build-decoupled-document && npm publish
               env:
                   NODE_AUTH_TOKEN: ${{secrets.npm_token}}
