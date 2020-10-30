@@ -37,6 +37,7 @@ import PasteFromOffice from '@ckeditor/ckeditor5-paste-from-office/src/pastefrom
 import Table from '@ckeditor/ckeditor5-table/src/table';
 import TableToolbar from '@ckeditor/ckeditor5-table/src/tabletoolbar';
 import TextTransformation from '@ckeditor/ckeditor5-typing/src/texttransformation';
+import ImageResize from '@ckeditor/ckeditor5-image/src/imageresize';
 
 export default class DecoupledEditor extends DecoupledEditorBase {}
 
@@ -72,7 +73,8 @@ DecoupledEditor.builtinPlugins = [
 	PasteFromOffice,
 	Table,
 	TableToolbar,
-	TextTransformation
+	TextTransformation,
+	ImageResize
 ];
 
 // Editor configuration.
@@ -120,7 +122,26 @@ DecoupledEditor.defaultConfig = {
 			'imageStyle:full',
 			'imageStyle:alignRight',
 			'|',
-			'imageTextAlternative'
+			'imageTextAlternative',
+			'|',
+			'imageResize'
+		],
+		resizeOptions: [
+			{
+				name: 'imageResize:original',
+				value: null,
+				label: 'Original'
+			},
+			{
+				name: 'imageResize:75',
+				value: '75',
+				label: '75%'
+			},
+			{
+				name: 'imageResize:50',
+				value: '50',
+				label: '50%'
+			}
 		]
 	},
 	table: {
