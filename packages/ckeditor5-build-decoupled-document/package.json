@@ -1,5 +1,5 @@
 {
-  "name": "@ckeditor/ckeditor5-build-decoupled-document",
+  "name": "@ntatc-liquidstudio/ckeditor5-build-decoupled-document",
   "version": "23.0.0",
   "description": "The document editor build of CKEditor 5 – the best browser-based rich text editor.",
   "keywords": [
