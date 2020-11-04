@@ -142,7 +142,8 @@ DecoupledEditor.defaultConfig = {
 				value: '50',
 				label: '50%'
 			}
-		]
+		],
+		resizeUnit: 'px'
 	},
 	table: {
 		contentToolbar: [
