@@ -23,8 +23,8 @@ import CKFinder from '@ckeditor/ckeditor5-ckfinder/src/ckfinder';
 import EasyImage from '@ckeditor/ckeditor5-easy-image/src/easyimage';
 import Heading from '@ckeditor/ckeditor5-heading/src/heading';
 import Image from '@ckeditor/ckeditor5-image/src/image';
-import ImageCaption from '@ckeditor/ckeditor5-image/src/imagecaption';
-import ImageStyle from '@ckeditor/ckeditor5-image/src/imagestyle';
+// import ImageCaption from '@ckeditor/ckeditor5-image/src/imagecaption';
+// import ImageStyle from '@ckeditor/ckeditor5-image/src/imagestyle';
 import ImageToolbar from '@ckeditor/ckeditor5-image/src/imagetoolbar';
 import ImageUpload from '@ckeditor/ckeditor5-image/src/imageupload';
 import Indent from '@ckeditor/ckeditor5-indent/src/indent';
@@ -60,8 +60,8 @@ DecoupledEditor.builtinPlugins = [
 	EasyImage,
 	Heading,
 	Image,
-	ImageCaption,
-	ImageStyle,
+	// ImageCaption,
+	// ImageStyle,
 	ImageToolbar,
 	ImageUpload,
 	Indent,
@@ -112,16 +112,16 @@ DecoupledEditor.defaultConfig = {
 		]
 	},
 	image: {
-		styles: [
-			'full',
-			'alignLeft',
-			'alignRight'
-		],
+		// styles: [
+		// 	'full',
+		// 	'alignLeft',
+		// 	'alignRight'
+		// ],
 		toolbar: [
-			'imageStyle:alignLeft',
-			'imageStyle:full',
-			'imageStyle:alignRight',
-			'|',
+			// 'imageStyle:alignLeft',
+			// 'imageStyle:full',
+			// 'imageStyle:alignRight',
+			// '|',
 			'imageTextAlternative',
 			'|',
 			'imageResize'
@@ -131,16 +131,6 @@ DecoupledEditor.defaultConfig = {
 				name: 'imageResize:original',
 				value: null,
 				label: 'Original'
-			},
-			{
-				name: 'imageResize:75',
-				value: '75',
-				label: '75%'
-			},
-			{
-				name: 'imageResize:50',
-				value: '50',
-				label: '50%'
 			}
 		],
 		resizeUnit: 'px'
