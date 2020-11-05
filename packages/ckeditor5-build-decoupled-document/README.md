@@ -1,4 +1,4 @@
-CKEditor 5 document editor build
+CKEditor 5 document editor build (non official)
 ========================================
 
 [![npm version](https://badge.fury.io/js/%40ckeditor%2Fckeditor5-build-decoupled-document.svg)](https://www.npmjs.com/package/@ckeditor/ckeditor5-build-decoupled-document)
@@ -23,7 +23,7 @@ See:
 First, install the build from npm:
 
 ```bash
-npm install --save @ckeditor/ckeditor5-build-decoupled-document
+npm install --save @ntatc-liquidstudio/ckeditor5-build-decoupled-document
 ```
 
 And use it in your website:
@@ -55,7 +55,7 @@ Or in your JavaScript application:
 import DecoupledEditor from '@ckeditor/ckeditor5-build-decoupled-document';
 
 // Or using the CommonJS version:
-// const DecoupledEditor = require( '@ckeditor/ckeditor5-build-decoupled-document' );
+// const DecoupledEditor = require( '@ntatc-liquidstudio/ckeditor5-build-decoupled-document' );
 
 DecoupledEditor
 	.create( document.querySelector( '#editor' ) )
