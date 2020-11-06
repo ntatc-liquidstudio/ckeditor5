@@ -112,26 +112,8 @@ DecoupledEditor.defaultConfig = {
 		]
 	},
 	image: {
-		// styles: [
-		// 	'full',
-		// 	'alignLeft',
-		// 	'alignRight'
-		// ],
 		toolbar: [
-			// 'imageStyle:alignLeft',
-			// 'imageStyle:full',
-			// 'imageStyle:alignRight',
-			// '|',
-			'imageTextAlternative',
-			'|',
-			'imageResize'
-		],
-		resizeOptions: [
-			{
-				name: 'imageResize:original',
-				value: null,
-				label: 'Original'
-			}
+			'imageTextAlternative'
 		],
 		resizeUnit: 'px'
 	},
