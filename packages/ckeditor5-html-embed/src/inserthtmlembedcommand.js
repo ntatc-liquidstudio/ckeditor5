@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2021, CKSource - Frederico Knabben. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -7,15 +7,15 @@
  * @module html-embed/inserthtmlembedcommand
  */
 
-import Command from '@ckeditor/ckeditor5-core/src/command';
-import { findOptimalInsertionPosition } from '@ckeditor/ckeditor5-widget/src/utils';
+import { Command } from 'ckeditor5/src/core';
+import { findOptimalInsertionPosition, checkSelectionOnObject } from 'ckeditor5/src/widget';
 
 /**
- * The insert raw HTML element command.
+ * The insert HTML embed element command.
  *
  * The command is registered by {@link module:html-embed/htmlembedediting~HtmlEmbedEditing} as `'insertHtmlEmbed'`.
  *
- * To insert the raw HTML element at the current selection, execute the command:
+ * To insert the HTML embed element at the current selection, execute the command:
  *
  *		editor.execute( 'insertHtmlEmbed' );
  *
@@ -30,7 +30,7 @@ export default class InsertHtmlEmbedCommand extends Command {
 	}
 
 	/**
-	 * Executes the command, which creates and inserts a new html element.
+	 * Executes the command, which creates and inserts a new HTML embed element.
 	 *
 	 * @fires execute
 	 */
@@ -58,7 +58,7 @@ function isHtmlEmbedAllowed( model ) {
 		!checkSelectionOnObject( selection, schema );
 }
 
-// Checks if a html embed is allowed by the schema in the optimal insertion parent.
+// Checks if an HTML embed is allowed by the schema in the optimal insertion parent.
 //
 // @param {module:engine/model/selection~Selection|module:engine/model/documentselection~DocumentSelection} selection
 // @param {module:engine/model/schema~Schema} schema
@@ -68,17 +68,6 @@ function isHtmlEmbedAllowedInParent( selection, schema, model ) {
 	const parent = getInsertPageBreakParent( selection, model );
 
 	return schema.checkChild( parent, 'rawHtml' );
-}
-
-// Checks if the selection is on object.
-//
-// @param {module:engine/model/selection~Selection|module:engine/model/documentselection~DocumentSelection} selection
-// @param {module:engine/model/schema~Schema} schema
-// @returns {Boolean}
-function checkSelectionOnObject( selection, schema ) {
-	const selectedElement = selection.getSelectedElement();
-
-	return selectedElement && schema.isObject( selectedElement );
 }
 
 // Returns a node that will be used to insert a page break with `model.insertContent` to check if a html embed element can be placed there.

@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2021, CKSource - Frederico Knabben. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -17,6 +17,7 @@ import DomEventData from '@ckeditor/ckeditor5-engine/src/view/observer/domeventd
 import { setData as setModelData, getData as getModelData } from '@ckeditor/ckeditor5-engine/src/dev-utils/model';
 import { getData as getViewData } from '@ckeditor/ckeditor5-engine/src/dev-utils/view';
 import { keyCodes } from '@ckeditor/ckeditor5-utils/src/keyboard';
+import toArray from '@ckeditor/ckeditor5-utils/src/toarray';
 import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
 
 describe( 'Widget', () => {
@@ -808,10 +809,7 @@ describe( 'Widget', () => {
 			it( name, () => {
 				testUtils.sinon.stub( editor.locale, 'contentLanguageDirection' ).value( contentLanguageDirection );
 
-				if ( !Array.isArray( actions ) ) {
-					actions = [ actions ];
-				}
-
+				actions = toArray( actions );
 				actions = actions.map( action => {
 					if ( typeof action === 'object' ) {
 						return action;
@@ -918,7 +916,7 @@ describe( 'Widget', () => {
 		);
 
 		test(
-			'should not modify forward delete default behaviour in single paragraph boundaries',
+			'should not modify delete forward default behaviour in single paragraph boundaries',
 			'<paragraph>foo[]</paragraph>',
 			'forward',
 			'<paragraph>foo[]</paragraph>'
@@ -1098,7 +1096,7 @@ describe( 'Widget', () => {
 		);
 
 		test(
-			'should remove the entire empty element (deeper structure) if it is next to a widget (forward delete)',
+			'should remove the entire empty element (deeper structure) if it is next to a widget (delete forward)',
 
 			'<paragraph>foo</paragraph>' +
 			'<blockQuote><div><div><paragraph>[]</paragraph></div></div></blockQuote>' +
@@ -1129,7 +1127,7 @@ describe( 'Widget', () => {
 		);
 
 		test(
-			'should not remove the entire element which is not empty and the element is next to a widget (forward delete)',
+			'should not remove the entire element which is not empty and the element is next to a widget (delete forward)',
 
 			'<paragraph>foo</paragraph>' +
 			'<blockQuote><paragraph>Foo</paragraph><paragraph>[]</paragraph></blockQuote>' +
@@ -1225,7 +1223,7 @@ describe( 'Widget', () => {
 			scrollStub.restore();
 		} );
 
-		it( 'does nothing when editor when read only mode is enabled (forward delete)', () => {
+		it( 'does nothing when editor when read only mode is enabled (delete forward)', () => {
 			const scrollStub = sinon.stub( view, 'scrollToTheSelection' );
 			setModelData( model,
 				'<paragraph>foo</paragraph>' +

@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2021, CKSource - Frederico Knabben. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -7,8 +7,7 @@
  * @module core/plugincollection
  */
 
-import CKEditorError, { logError } from '@ckeditor/ckeditor5-utils/src/ckeditorerror';
-
+import CKEditorError from '@ckeditor/ckeditor5-utils/src/ckeditorerror';
 import EmitterMixin from '@ckeditor/ckeditor5-utils/src/emittermixin';
 import mix from '@ckeditor/ckeditor5-utils/src/mix';
 
@@ -21,11 +20,11 @@ export default class PluginCollection {
 	/**
 	 * Creates an instance of the plugin collection class.
 	 * Allows loading and initializing plugins and their dependencies.
-	 * Allows to provide a list of already loaded plugins. These plugins will not be destroyed along with this collection.
+	 * Allows providing a list of already loaded plugins. These plugins will not be destroyed along with this collection.
 	 *
 	 * @param {module:core/editor/editor~Editor|module:core/context~Context} context
 	 * @param {Array.<Function>} [availablePlugins] Plugins (constructors) which the collection will be able to use
-	 * when {@link module:core/plugincollection~PluginCollection#init} is used with plugin names (strings, instead of constructors).
+	 * when {@link module:core/plugincollection~PluginCollection#init} is used with the plugin names (strings, instead of constructors).
 	 * Usually, the editor will pass its built-in plugins to the collection so they can later be
 	 * used in `config.plugins` or `config.removePlugins` by names.
 	 * @param {Iterable.<Array>} contextPlugins A list of already initialized plugins represented by a
@@ -105,8 +104,8 @@ export default class PluginCollection {
 	 *			} );
 	 *		}
 	 *
-	 * **Note**: This method will throw error if plugin is not loaded. Use `{@link #has editor.plugins.has()}`
-	 * to check if plugin is available.
+	 * **Note**: This method will throw an error if a plugin is not loaded. Use `{@link #has editor.plugins.has()}`
+	 * to check if a plugin is available.
 	 *
 	 * @param {Function|String} key The plugin constructor or {@link module:core/plugin~PluginInterface.pluginName name}.
 	 * @returns {module:core/plugin~PluginInterface}
@@ -130,7 +129,7 @@ export default class PluginCollection {
 			 * property.
 			 *
 			 * **Note**: You can use `{@link module:core/plugincollection~PluginCollection#has editor.plugins.has()}`
-			 * to check if plugin was loaded.
+			 * to check if a plugin was loaded.
 			 *
 			 * @error plugincollection-plugin-not-loaded
 			 * @param {String} plugin The name of the plugin which is not loaded.
@@ -163,26 +162,167 @@ export default class PluginCollection {
 	 * Initializes a set of plugins and adds them to the collection.
 	 *
 	 * @param {Array.<Function|String>} plugins An array of {@link module:core/plugin~PluginInterface plugin constructors}
-	 * or {@link module:core/plugin~PluginInterface.pluginName plugin names}. The second option (names) works only if
-	 * `availablePlugins` were passed to the {@link #constructor}.
-	 * @param {Array.<String|Function>} [removePlugins] Names of plugins or plugin constructors
+	 * or {@link module:core/plugin~PluginInterface.pluginName plugin names}.
+	 * @param {Array.<String|Function>} [removedPlugins] Names of the plugins or plugin constructors
 	 * that should not be loaded (despite being specified in the `plugins` array).
 	 * @returns {Promise.<module:core/plugin~LoadedPlugins>} A promise which gets resolved once all plugins are loaded
 	 * and available in the collection.
 	 */
-	init( plugins, removePlugins = [] ) {
+	init( plugins, removedPlugins = [] ) {
+		// Plugin initialization procedure consists of 2 main steps:
+		// 1) collecting all available plugin constructors,
+		// 2) verification whether all required plugins can be instantiated.
+		//
+		// In the first step, all plugin constructors, available in the provided `plugins` array and inside
+		// plugin's dependencies (from the `Plugin.requires` array), are recursively collected and added to the existing
+		// `this._availablePlugins` map, but without any verification at the given moment. Performing the verification
+		// at this point (during the plugin constructor searching) would cause false errors to occur, that some plugin
+		// is missing but in fact it may be defined further in the array as the dependency of other plugin. After
+		// traversing the entire dependency tree, it will be checked if all required "top level" plugins are available.
+		//
+		// In the second step, the list of plugins that have not been explicitly removed is traversed to get all the
+		// plugin constructors to be instantiated in the correct order and to validate against some rules. Finally, if
+		// no plugin is missing and no other error has been found, they all will be instantiated.
 		const that = this;
 		const context = this._context;
-		const loading = new Set();
-		const loaded = [];
 
-		const pluginConstructors = mapToAvailableConstructors( plugins );
-		const removePluginConstructors = mapToAvailableConstructors( removePlugins );
-		const missingPlugins = getMissingPluginNames( plugins );
+		findAvailablePluginConstructors( plugins );
 
-		if ( missingPlugins ) {
+		validatePlugins( plugins );
+
+		const pluginsToLoad = plugins.filter( plugin => !isPluginRemoved( plugin, removedPlugins ) );
+
+		const pluginConstructors = [ ...getPluginConstructors( pluginsToLoad ) ];
+
+		const pluginInstances = loadPlugins( pluginConstructors );
+
+		return initPlugins( pluginInstances, 'init' )
+			.then( () => initPlugins( pluginInstances, 'afterInit' ) )
+			.then( () => pluginInstances );
+
+		function isPluginConstructor( plugin ) {
+			return typeof plugin === 'function';
+		}
+
+		function isContextPlugin( plugin ) {
+			return isPluginConstructor( plugin ) && plugin.isContextPlugin;
+		}
+
+		function isPluginRemoved( plugin, removedPlugins ) {
+			return removedPlugins.some( removedPlugin => {
+				if ( removedPlugin === plugin ) {
+					return true;
+				}
+
+				if ( getPluginName( plugin ) === removedPlugin ) {
+					return true;
+				}
+
+				if ( getPluginName( removedPlugin ) === plugin ) {
+					return true;
+				}
+
+				return false;
+			} );
+		}
+
+		function getPluginName( plugin ) {
+			return isPluginConstructor( plugin ) ?
+				plugin.pluginName || plugin.name :
+				plugin;
+		}
+
+		function findAvailablePluginConstructors( plugins, processed = new Set() ) {
+			plugins.forEach( plugin => {
+				if ( !isPluginConstructor( plugin ) ) {
+					return;
+				}
+
+				if ( processed.has( plugin ) ) {
+					return;
+				}
+
+				processed.add( plugin );
+
+				if ( plugin.pluginName && !that._availablePlugins.has( plugin.pluginName ) ) {
+					that._availablePlugins.set( plugin.pluginName, plugin );
+				}
+
+				if ( plugin.requires ) {
+					findAvailablePluginConstructors( plugin.requires, processed );
+				}
+			} );
+		}
+
+		function getPluginConstructors( plugins, processed = new Set() ) {
+			return plugins
+				.map( plugin => {
+					return isPluginConstructor( plugin ) ?
+						plugin :
+						that._availablePlugins.get( plugin );
+				} )
+				.reduce( ( result, plugin ) => {
+					if ( processed.has( plugin ) ) {
+						return result;
+					}
+
+					processed.add( plugin );
+
+					if ( plugin.requires ) {
+						validatePlugins( plugin.requires, plugin );
+
+						getPluginConstructors( plugin.requires, processed ).forEach( plugin => result.add( plugin ) );
+					}
+
+					return result.add( plugin );
+				}, new Set() );
+		}
+
+		function validatePlugins( plugins, parentPluginConstructor = null ) {
+			plugins
+				.map( plugin => {
+					return isPluginConstructor( plugin ) ?
+						plugin :
+						that._availablePlugins.get( plugin ) || plugin;
+				} )
+				.forEach( plugin => {
+					checkMissingPlugin( plugin, parentPluginConstructor );
+					checkContextPlugin( plugin, parentPluginConstructor );
+					checkRemovedPlugin( plugin, parentPluginConstructor );
+				} );
+		}
+
+		function checkMissingPlugin( plugin, parentPluginConstructor ) {
+			if ( isPluginConstructor( plugin ) ) {
+				return;
+			}
+
+			if ( parentPluginConstructor ) {
+				/**
+				 * A required "soft" dependency was not found on plugin list.
+				 *
+				 * Plugin classes (constructors) need to be provided to the editor before they can be loaded by name.
+				 * This is usually done in CKEditor 5 builds by setting the
+				 * {@link module:core/editor/editor~Editor.builtinPlugins} property. Alternatively they can be provided using
+				 * {@link module:core/editor/editorconfig~EditorConfig#plugins} or
+				 * {@link module:core/editor/editorconfig~EditorConfig#extraPlugins} configuration.
+				 *
+				 * **If you see this warning when using one of the {@glink builds/index CKEditor 5 Builds}**, it means
+				 * that you didn't add the required plugin to the plugins list when loading the editor.
+				 *
+				 * @error plugincollection-soft-required
+				 * @param {String} plugin The name of the required plugin.
+				 * @param {String} requiredBy The name of the plugin that was requiring other plugin.
+				 */
+				throw new CKEditorError(
+					'plugincollection-soft-required',
+					context,
+					{ plugin, requiredBy: getPluginName( parentPluginConstructor ) }
+				);
+			}
+
 			/**
-			 * Some plugins are not available and could not be loaded.
+			 * A plugin is not available and could not be loaded.
 			 *
 			 * Plugin classes (constructors) need to be provided to the editor before they can be loaded by name.
 			 * This is usually done in CKEditor 5 builds by setting the {@link module:core/editor/editor~Editor.builtinPlugins}
@@ -196,65 +336,82 @@ export default class PluginCollection {
 			 * **If you see this warning when using one of the editor creators directly** (not a build), then it means
 			 * that you tried loading plugins by name. However, unlike CKEditor 4, CKEditor 5 does not implement a "plugin loader".
 			 * This means that CKEditor 5 does not know where to load the plugin modules from. Therefore, you need to
-			 * provide each plugin through reference (as a constructor function). Check out the examples in
+			 * provide each plugin through a reference (as a constructor function). Check out the examples in
 			 * {@glink builds/guides/integration/advanced-setup#scenario-2-building-from-source "Building from source"}.
 			 *
 			 * @error plugincollection-plugin-not-found
-			 * @param {Array.<String>} plugins The name of the plugins which could not be loaded.
+			 * @param {String} plugin The name of the plugin which could not be loaded.
 			 */
-			const errorId = 'plugincollection-plugin-not-found';
-
-			// Log the error, so it's more visible on the console. Hopefully, for better DX.
-			logError( errorId, { plugins: missingPlugins } );
-
-			return Promise.reject( new CKEditorError( errorId, context, { plugins: missingPlugins } ) );
+			throw new CKEditorError(
+				'plugincollection-plugin-not-found',
+				context,
+				{ plugin }
+			);
 		}
 
-		return Promise.all( pluginConstructors.map( loadPlugin ) )
-			.then( () => initPlugins( loaded, 'init' ) )
-			.then( () => initPlugins( loaded, 'afterInit' ) )
-			.then( () => loaded );
-
-		function loadPlugin( PluginConstructor ) {
-			if ( removePluginConstructors.includes( PluginConstructor ) ) {
+		function checkContextPlugin( plugin, parentPluginConstructor ) {
+			if ( !isContextPlugin( parentPluginConstructor ) ) {
 				return;
 			}
 
-			// The plugin is already loaded or being loaded - do nothing.
-			if ( that._plugins.has( PluginConstructor ) || loading.has( PluginConstructor ) ) {
+			if ( isContextPlugin( plugin ) ) {
 				return;
 			}
 
-			return instantiatePlugin( PluginConstructor )
-				.catch( err => {
-					/**
-					 * It was not possible to load the plugin.
-					 *
-					 * This is a generic error logged to the console when a JavaSript error is thrown during the initialization
-					 * of one of the plugins.
-					 *
-					 * If you correctly handled the promise returned by the editor's `create()` method (like shown below),
-					 * you will find the original error logged to the console, too:
-					 *
-					 *		ClassicEditor.create( document.getElementById( 'editor' ) )
-					 *			.then( editor => {
-					 *				// ...
-					 * 			} )
-					 *			.catch( error => {
-					 *				console.error( error );
-					 *			} );
-					 *
-					 * @error plugincollection-load
-					 * @param {String} plugin The name of the plugin that could not be loaded.
-					 */
-					logError( 'plugincollection-load', { plugin: PluginConstructor } );
-
-					throw err;
-				} );
+			/**
+			 * If a plugin is a context plugin, all plugins it requires should also be context plugins
+			 * instead of plugins. In other words, if one plugin can be used in the context,
+			 * all its requirements should also be ready to be used in the context. Note that the context
+			 * provides only a part of the API provided by the editor. If one plugin needs a full
+			 * editor API, all plugins which require it are considered as plugins that need a full
+			 * editor API.
+			 *
+			 * @error plugincollection-context-required
+			 * @param {String} plugin The name of the required plugin.
+			 * @param {String} requiredBy The name of the parent plugin.
+			 */
+			throw new CKEditorError(
+				'plugincollection-context-required',
+				context,
+				{ plugin: getPluginName( plugin ), requiredBy: getPluginName( parentPluginConstructor ) }
+			);
 		}
 
-		function initPlugins( loadedPlugins, method ) {
-			return loadedPlugins.reduce( ( promise, plugin ) => {
+		function checkRemovedPlugin( plugin, parentPluginConstructor ) {
+			if ( !parentPluginConstructor ) {
+				return;
+			}
+
+			if ( !isPluginRemoved( plugin, removedPlugins ) ) {
+				return;
+			}
+
+			/**
+			 * Cannot load a plugin because one of its dependencies is listed in the `removePlugins` option.
+			 *
+			 * @error plugincollection-required
+			 * @param {String} plugin The name of the required plugin.
+			 * @param {String} requiredBy The name of the parent plugin.
+			 */
+			throw new CKEditorError(
+				'plugincollection-required',
+				context,
+				{ plugin: getPluginName( plugin ), requiredBy: getPluginName( parentPluginConstructor ) }
+			);
+		}
+
+		function loadPlugins( pluginConstructors ) {
+			return pluginConstructors.map( PluginConstructor => {
+				const pluginInstance = that._contextPlugins.get( PluginConstructor ) || new PluginConstructor( context );
+
+				that._add( PluginConstructor, pluginInstance );
+
+				return pluginInstance;
+			} );
+		}
+
+		function initPlugins( pluginInstances, method ) {
+			return pluginInstances.reduce( ( promise, plugin ) => {
 				if ( !plugin[ method ] ) {
 					return promise;
 				}
@@ -265,87 +422,6 @@ export default class PluginCollection {
 
 				return promise.then( plugin[ method ].bind( plugin ) );
 			}, Promise.resolve() );
-		}
-
-		function instantiatePlugin( PluginConstructor ) {
-			return new Promise( resolve => {
-				loading.add( PluginConstructor );
-
-				if ( PluginConstructor.requires ) {
-					PluginConstructor.requires.forEach( RequiredPluginConstructorOrName => {
-						const RequiredPluginConstructor = getPluginConstructor( RequiredPluginConstructorOrName );
-
-						if ( PluginConstructor.isContextPlugin && !RequiredPluginConstructor.isContextPlugin ) {
-							/**
-							 * If a plugin is a context plugin, all plugins it requires should also be context plugins
-							 * instead of plugins. In other words, if one plugin can be used in the context,
-							 * all its requirements should also be ready to be used in the context. Note that the context
-							 * provides only a part of the API provided by the editor. If one plugin needs a full
-							 * editor API, all plugins which require it are considered as plugins that need a full
-							 * editor API.
-							 *
-							 * @error plugincollection-context-required
-							 * @param {String} plugin The name of the required plugin.
-							 * @param {String} requiredBy The name of the parent plugin.
-							 */
-							throw new CKEditorError(
-								'plugincollection-context-required',
-								null,
-								{ plugin: RequiredPluginConstructor.name, requiredBy: PluginConstructor.name }
-							);
-						}
-
-						if ( removePlugins.includes( RequiredPluginConstructor ) ) {
-							/**
-							 * Cannot load a plugin because one of its dependencies is listed in the `removePlugins` option.
-							 *
-							 * @error plugincollection-required
-							 * @param {String} plugin The name of the required plugin.
-							 * @param {String} requiredBy The name of the parent plugin.
-							 */
-							throw new CKEditorError(
-								'plugincollection-required',
-								context,
-								{ plugin: RequiredPluginConstructor.name, requiredBy: PluginConstructor.name }
-							);
-						}
-
-						loadPlugin( RequiredPluginConstructor );
-					} );
-				}
-
-				const plugin = that._contextPlugins.get( PluginConstructor ) || new PluginConstructor( context );
-				that._add( PluginConstructor, plugin );
-				loaded.push( plugin );
-
-				resolve();
-			} );
-		}
-
-		function getPluginConstructor( PluginConstructorOrName ) {
-			if ( typeof PluginConstructorOrName == 'function' ) {
-				return PluginConstructorOrName;
-			}
-
-			return that._availablePlugins.get( PluginConstructorOrName );
-		}
-
-		function getMissingPluginNames( plugins ) {
-			const missingPlugins = [];
-
-			for ( const pluginNameOrConstructor of plugins ) {
-				if ( !getPluginConstructor( pluginNameOrConstructor ) ) {
-					missingPlugins.push( pluginNameOrConstructor );
-				}
-			}
-
-			return missingPlugins.length ? missingPlugins : null;
-		}
-
-		function mapToAvailableConstructors( plugins ) {
-			return plugins
-				.map( pluginNameOrConstructor => getPluginConstructor( pluginNameOrConstructor ) )
-				.filter( PluginConstructor => !!PluginConstructor );
 		}
 	}
 
@@ -398,11 +474,11 @@ export default class PluginCollection {
 			 * The second option is that your `node_modules/` directory contains duplicated versions of the same
 			 * CKEditor 5 packages. Normally, on clean installations, npm deduplicates packages in `node_modules/`, so
 			 * it may be enough to call `rm -rf node_modules && npm i`. However, if you installed conflicting versions
-			 * of packages, their dependencies may need to be installed in more than one version which may lead to this
+			 * of some packages, their dependencies may need to be installed in more than one version which may lead to this
 			 * warning.
 			 *
 			 * Technically speaking, this error occurs because after adding a plugin to an existing editor build
-			 * dependencies of this plugin are being duplicated.
+			 * the dependencies of this plugin are being duplicated.
 			 * They are already built into that editor build and now get added for the second time as dependencies
 			 * of the plugin you are installing.
 			 *

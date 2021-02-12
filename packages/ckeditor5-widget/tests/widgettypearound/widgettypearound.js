@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2021, CKSource - Frederico Knabben. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -1211,7 +1211,7 @@ describe( 'WidgetTypeAround', () => {
 				} );
 			} );
 
-			describe( 'forward delete', () => {
+			describe( 'delete forward', () => {
 				it( 'should delete content after a widget if the "fake caret" is also after the widget', () => {
 					setModelData( editor.model, '[<blockWidget></blockWidget>]<paragraph>foo</paragraph>' );
 

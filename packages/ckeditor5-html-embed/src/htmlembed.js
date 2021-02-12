@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2003-2020, CKSource - Frederico Knabben. All rights reserved.
+ * @license Copyright (c) 2003-2021, CKSource - Frederico Knabben. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
 
@@ -7,14 +7,16 @@
  * @module html-embed/htmlembed
  */
 
-import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
+import { Plugin } from 'ckeditor5/src/core';
+import { Widget } from 'ckeditor5/src/widget';
+
 import HtmlEmbedEditing from './htmlembedediting';
 import HtmlEmbedUI from './htmlembedui';
 
 /**
  * The HTML embed feature.
  *
- * It allows inserting HTML snippets directly to the editor.
+ * It allows inserting HTML snippets directly into the editor.
  *
  * For a detailed overview, check the {@glink features/html-embed HTML embed feature} documentation.
  *
@@ -25,7 +27,7 @@ export default class HtmlEmbed extends Plugin {
 	 * @inheritDoc
 	 */
 	static get requires() {
-		return [ HtmlEmbedEditing, HtmlEmbedUI ];
+		return [ HtmlEmbedEditing, HtmlEmbedUI, Widget ];
 	}
 
 	/**
@@ -52,7 +54,7 @@ export default class HtmlEmbed extends Plugin {
  */
 
 /**
- * Whether the feature should render previews of the the embedded HTML.
+ * Whether the feature should render previews of the embedded HTML.
  *
  * When set to `true`, the feature will produce a preview of the inserted HTML based on a sanitized
  * version of the HTML provided by the user.
@@ -67,9 +69,9 @@ export default class HtmlEmbed extends Plugin {
  */
 
 /**
- * Callback used to sanitize HTML provided by the user when generating previews of it in the editor.
+ * Callback used to sanitize the HTML provided by the user when generating previews of it in the editor.
  *
- * We strongly recommend to overwrite the default function to avoid XSS vulnerabilities.
+ * We strongly recommend overwriting the default function to avoid XSS vulnerabilities.
  *
  * Read more about the security aspect of this feature in the {@glink features/html-embed#security "Security"} section of
  * the {@glink features/html-embed HTML embed} feature guide.
