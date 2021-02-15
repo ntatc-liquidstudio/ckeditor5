@@ -26,7 +26,8 @@ import Image from '@ckeditor/ckeditor5-image/src/image';
 // import ImageCaption from '@ckeditor/ckeditor5-image/src/imagecaption';
 // import ImageStyle from '@ckeditor/ckeditor5-image/src/imagestyle';
 import ImageToolbar from '@ckeditor/ckeditor5-image/src/imagetoolbar';
-import ImageUpload from '@ckeditor/ckeditor5-image/src/imageupload';
+// import ImageUpload from '@ckeditor/ckeditor5-image/src/imageupload';
+import ImageInsert from '@ckeditor/ckeditor5-image/src/imageinsert';
 import Indent from '@ckeditor/ckeditor5-indent/src/indent';
 import IndentBlock from '@ckeditor/ckeditor5-indent/src/indentblock';
 import Link from '@ckeditor/ckeditor5-link/src/link';
@@ -63,7 +64,8 @@ DecoupledEditor.builtinPlugins = [
 	// ImageCaption,
 	// ImageStyle,
 	ImageToolbar,
-	ImageUpload,
+	// ImageUpload,
+	ImageInsert,
 	Indent,
 	IndentBlock,
 	Link,
@@ -103,7 +105,7 @@ DecoupledEditor.defaultConfig = {
 			'|',
 			'link',
 			'blockquote',
-			'imageUpload',
+			'imageInsert',
 			'insertTable',
 			'mediaEmbed',
 			'|',
