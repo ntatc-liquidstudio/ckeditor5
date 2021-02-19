@@ -28,6 +28,7 @@ import Image from '@ckeditor/ckeditor5-image/src/image';
 import ImageToolbar from '@ckeditor/ckeditor5-image/src/imagetoolbar';
 // import ImageUpload from '@ckeditor/ckeditor5-image/src/imageupload';
 import ImageInsert from '@ckeditor/ckeditor5-image/src/imageinsert';
+import ImageFileInput from './file-input-widget/imagefileinput';
 import Indent from '@ckeditor/ckeditor5-indent/src/indent';
 import IndentBlock from '@ckeditor/ckeditor5-indent/src/indentblock';
 import Link from '@ckeditor/ckeditor5-link/src/link';
@@ -66,6 +67,7 @@ DecoupledEditor.builtinPlugins = [
 	ImageToolbar,
 	// ImageUpload,
 	ImageInsert,
+	ImageFileInput,
 	Indent,
 	IndentBlock,
 	Link,
@@ -115,9 +117,13 @@ DecoupledEditor.defaultConfig = {
 	},
 	image: {
 		toolbar: [
-			'imageTextAlternative'
+			'imageTextAlternative',
+			'imageFileInput'
 		],
-		resizeUnit: 'px'
+		resizeUnit: 'px',
+		upload: {
+			types: [ 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff' ]
+		}
 	},
 	table: {
 		contentToolbar: [
